@@ -42,10 +42,10 @@ func main() {
 
 		cronLine := strings.Split(string(cronFile), "\n")
 		for i := 0; i < len(cronLine); i++ {
-			cronContent := strings.SplitAfterN(cronLine[i], " ", 5)
+			cronContent := strings.SplitN(cronLine[i], " ", 6)
 
-			listSchedule = append(listSchedule, cronContent[0])
-			listCommand = append(listCommand, cronContent[1])
+			listSchedule = append(listSchedule, cronContent[0]+" "+cronContent[1]+" "+cronContent[2]+" "+cronContent[3]+" "+cronContent[4])
+			listCommand = append(listCommand, cronContent[5])
 		}
 	}
 
