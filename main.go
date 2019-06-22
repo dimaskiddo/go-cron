@@ -17,53 +17,58 @@ import (
 )
 
 func main() {
-	osSignal := make(chan os.Signal, 1)
-	signal.Notify(osSignal, os.Interrupt, syscall.SIGTERM)
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 
 	hlp.LogPrint(hlp.LogLevelInfo, "Initialize Go Cron")
-	var listSchedule, listCommand []string
+	var cronSchedule, cronCommand []string
 
-	cronTab := "/etc/gocron/crontab"
-	_, err := os.Stat(cronTab)
+	cronFile := hlp.GetEnv("CRON_FILE", "string", false)
+	if cronFile == nil {
+		cronFile = "/etc/gocron/crontab"
+	}
+
+	_, err := os.Stat(cronFile.(string))
 	if err != nil {
 		hlp.LogPrint(hlp.LogLevelWarn, "Cron File Doesn't Exist")
 		hlp.LogPrint(hlp.LogLevelInfo, "Loading Cron Environment Variable")
 
-		listSchedule = strings.Split(hlp.GetEnv("CRON_SCHEDULE_LIST", "string", true).(string), ";")
-		listCommand = strings.Split(hlp.GetEnv("CRON_COMMAND_LIST", "string", true).(string), ";")
+		cronSchedule = strings.Split(hlp.GetEnv("CRON_SCHEDULE_LIST", "string", true).(string), ";")
+		cronCommand = strings.Split(hlp.GetEnv("CRON_COMMAND_LIST", "string", true).(string), ";")
 	} else {
 		hlp.LogPrint(hlp.LogLevelInfo, "Cron File Exist")
 		hlp.LogPrint(hlp.LogLevelInfo, "Loading Cron File Content")
 
-		cronFile, err := ioutil.ReadFile(cronTab)
+		cronStream, err := ioutil.ReadFile(cronFile.(string))
 		if err != nil {
 			hlp.LogPrint(hlp.LogLevelFatal, "Error While Loading Cron File")
 		}
 
-		cronLine := strings.Split(string(cronFile), "\n")
+		cronLine := strings.Split(string(cronStream), "\n")
 		for i := 0; i < len(cronLine); i++ {
 			cronContent := strings.SplitN(cronLine[i], " ", 6)
 
-			listSchedule = append(listSchedule, cronContent[0]+" "+cronContent[1]+" "+cronContent[2]+" "+cronContent[3]+" "+cronContent[4])
-			listCommand = append(listCommand, cronContent[5])
+			cronSchedule = append(cronSchedule, cronContent[0]+" "+cronContent[1]+" "+cronContent[2]+" "+cronContent[3]+" "+cronContent[4])
+			cronCommand = append(cronCommand, cronContent[5])
 		}
 	}
 
-	if len(listSchedule) != len(listCommand) {
+	hlp.LogPrint(hlp.LogLevelInfo, "Done Parsing Cron Schedule List and Command List")
+	if len(cronSchedule) != len(cronCommand) {
 		hlp.LogPrint(hlp.LogLevelFatal, "Cron Schedule List and Command List Has Different Total Length")
 	}
 
 	hlp.LogPrint(hlp.LogLevelInfo, "Initialize Cron Routine")
 	cronRoutine := cron.New()
 
-	for i := 0; i < len(listSchedule); i++ {
-		hlp.LogPrint(hlp.LogLevelInfo, "Adding Cron Routine [Cron ID: "+strconv.Itoa(i)+", Schedule: ["+listSchedule[i]+"], Command: ["+listCommand[i]+"]]")
+	for i := 0; i < len(cronSchedule); i++ {
+		hlp.LogPrint(hlp.LogLevelInfo, "Adding Cron Routine [Cron ID: "+strconv.Itoa(i)+", Schedule: ["+cronSchedule[i]+"], Command: ["+cronCommand[i]+"]]")
 		go func(i int) {
-			cronRoutine.AddFunc("0 "+listSchedule[i], func() {
+			cronRoutine.AddFunc("0 "+cronSchedule[i], func() {
 				cronID := strconv.Itoa(i)
 				hlp.LogPrint(hlp.LogLevelInfo, "Cron ID: "+cronID+", Executing Cron Command")
 
-				cmdCron := hlp.SplitWithEscapeN(listCommand[i], " ", -1, true)
+				cmdCron := hlp.SplitWithEscapeN(cronCommand[i], " ", -1, true)
 				cmdExec := exec.Command(cmdCron[0], cmdCron[1:]...)
 
 				var cmdStdout bytes.Buffer
@@ -95,7 +100,7 @@ func main() {
 	cronRoutine.Start()
 
 	select {
-	case <-osSignal:
+	case <-sigchan:
 		fmt.Println("")
 		hlp.LogPrint(hlp.LogLevelInfo, "Stopping Cron Routine")
 		cronRoutine.Stop()
