@@ -36,19 +36,19 @@ func LogPrint(level logLevel, message interface{}) {
 	if log != nil {
 		switch level {
 		case "panic":
-			log.Panicf("%v\n", message)
+			log.Panicln(message)
 		case "fatal":
-			log.Fatalf("%v\n", message)
+			log.Fatalln(message)
 		case "error":
-			log.Errorf("%v\n", message)
+			log.Errorln(message)
 		case "warn":
-			log.Warnf("%v\n", message)
+			log.Warnln(message)
 		case "debug":
-			log.Debugf("%v\n", message)
+			log.Debugln(message)
 		case "trace":
-			log.Tracef("%v\n", message)
+			log.Traceln(message)
 		default:
-			log.Infof("%v\n", message)
+			log.Infoln(message)
 		}
 	}
 }
