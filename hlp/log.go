@@ -1,4 +1,4 @@
-package helper
+package hlp
 
 import (
 	"os"
@@ -20,7 +20,7 @@ const (
 	LogLevelInfo  logLevel = "info"
 )
 
-func logInit() {
+func init() {
 	log = logrus.New()
 
 	log.SetFormatter(&logrus.TextFormatter{
@@ -32,7 +32,7 @@ func logInit() {
 	log.SetLevel(logrus.InfoLevel)
 }
 
-func LogPrint(level logLevel, message interface{}) {
+func LogPrintln(level logLevel, message interface{}) {
 	if log != nil {
 		switch level {
 		case "panic":

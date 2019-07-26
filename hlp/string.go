@@ -1,8 +1,20 @@
-package helper
+package hlp
 
 import (
 	"strings"
 )
+
+func IsStringsContains(s string, str []string) bool {
+	if len(str) > 0 {
+		for _, v := range str {
+			if v == s {
+				return true
+			}
+		}
+	}
+
+	return false
+}
 
 func SplitWithEscapeN(s string, sep string, n int, trim bool) []string {
 	ret := []string{""}
