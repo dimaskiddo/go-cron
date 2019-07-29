@@ -10,8 +10,8 @@ import (
 var Version = &cobra.Command{
 	Use:   "version",
 	Short: "Show current version",
-	Long:  "Show Current Application Version",
+	Long:  "Go-Cron Version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Go-Cron Version 1.0")
+		fmt.Println("Go-Cron Version v0.0.1")
 	},
 }

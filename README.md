@@ -1,7 +1,8 @@
 # Go-Cron an Alternative Cron Binaries for Containers
 
+Download Go-Cron Binaries at [Releases page](https://github.com/dimaskiddo/go-cron/releases).
 This repository is using a codebase from [dimaskiddo/codebase-go-cli](https://github.com/dimaskiddo/codebase-go-cli).
-Downloag Go-Cron Binaries at Releases page [here](https://github.com/dimaskiddo/go-cron/releases)
+
 
 ## Built With
 
