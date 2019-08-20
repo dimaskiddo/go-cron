@@ -71,17 +71,19 @@ var Daemon = &cobra.Command{
 				hlp.LogPrintln(hlp.LogLevelFatal, "crontab file has empty contents")
 			}
 
-			cronTabLines := strings.Split(string(cronTabContents), "\n")
+			cronTabLines := strings.Split(string(cronTabContents), fmt.Sprintf("\n"))
 			for i := 0; i < len(cronTabLines); i++ {
-				cronTabDatas := strings.Split(cronTabLines[i], " ")
+				if len(cronTabLines[i]) != 0 {
+					cronTabDatas := strings.Split(cronTabLines[i], " ")
 
-				arrSchedule = append(arrSchedule, cronTabDatas[0], cronTabDatas[1], cronTabDatas[2], cronTabDatas[3], cronTabDatas[4])
-				arrCommand = append(arrCommand, cronTabDatas[5])
+					arrSchedule = append(arrSchedule, strings.TrimSpace(strings.Join(cronTabDatas[:5], " ")))
+					arrCommand = append(arrCommand, strings.TrimSpace(strings.Join(cronTabDatas[5:], " ")))
+				}
 			}
 		}
 
 		if len(arrSchedule) != len(arrCommand) {
-			hlp.LogPrintln(hlp.LogLevelFatal, "cron-schedule and cron-command has mismatch range")
+			hlp.LogPrintln(hlp.LogLevelFatal, fmt.Sprintf("cron-schedule and cron-command has mismatch range (%v:%v)", len(arrSchedule), len(arrCommand)))
 		}
 
 		strShowResultIDs, err = cmd.Flags().GetString("cron-show-ids")
@@ -111,7 +113,7 @@ var Daemon = &cobra.Command{
 						if hlp.IsStringsContains(fmt.Sprintf("%v", i), arrShowResultIDs) {
 							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, cron routine execution result:", i))
 							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, -----------------------------------------", i))
-							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, %v", i, string(cronStderr.String())))
+							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, execution result:\n%v", i, string(cronStderr.String())))
 							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, -----------------------------------------", i))
 						}
 						hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, cron routine executed with an error", i))
@@ -121,7 +123,7 @@ var Daemon = &cobra.Command{
 					if hlp.IsStringsContains(fmt.Sprintf("%v", i), arrShowResultIDs) {
 						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, cron routine execution result:", i))
 						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, -----------------------------------------", i))
-						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, %v", i, string(cronStdout.String())))
+						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, execution result:\n%v", i, string(cronStdout.String())))
 						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, -----------------------------------------", i))
 					}
 					hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, cron routine executed successfully", i))
@@ -146,6 +148,6 @@ var Daemon = &cobra.Command{
 func init() {
 	Daemon.Flags().String("cron-command", "", "Cron command list to be executed when cron schedule is match with current time (use (;) separator between command)")
 	Daemon.Flags().String("cron-schedule", "", "Cron schedule list to run cron command in cron time format (use (;) separator between schedule)")
-	Daemon.Flags().String("cron-show-ids", "", "Cron ids list to show cron command execution result (use (;) separator between ids)")
+	Daemon.Flags().String("cron-show-ids", "", "Cron IDs list to show cron command execution result (use (;) separator between ids)")
 	Daemon.Flags().String("file", "/etc/go-cron/crontab", "Cron crontab file location")
 }
