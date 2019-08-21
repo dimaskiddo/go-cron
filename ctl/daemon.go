@@ -31,9 +31,16 @@ var Daemon = &cobra.Command{
 		var strSchedule, strCommand, strShowResultIDs string
 		var arrSchedule, arrCommand, arrShowResultIDs []string
 
-		cronTabFile, err := cmd.Flags().GetString("file")
+		cronTabFile, err := hlp.GetEnvString("CRON_CRONTAB_FILE")
 		if err != nil {
 			hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+		}
+
+		if len(cronTabFile) == 0 {
+			cronTabFile, err = cmd.Flags().GetString("file")
+			if err != nil {
+				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+			}
 		}
 
 		hlp.LogPrintln(hlp.LogLevelInfo, "parse go-cron configuration")
@@ -41,18 +48,32 @@ var Daemon = &cobra.Command{
 		if err != nil {
 			hlp.LogPrintln(hlp.LogLevelWarn, "crontab file not found, load configuration from parameters")
 
-			strSchedule, err = cmd.Flags().GetString("cron-schedule")
+			strSchedule, err = hlp.GetEnvString("CRON_SCHEDULE_LIST")
 			if err != nil {
 				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+			}
+
+			if len(strSchedule) == 0 {
+				strSchedule, err = cmd.Flags().GetString("cron-schedule")
+				if err != nil {
+					hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+				}
 			}
 
 			if len(strSchedule) <= 0 {
 				hlp.LogPrintln(hlp.LogLevelFatal, "cron-schedule parameter is empty")
 			}
 
-			strCommand, err = cmd.Flags().GetString("cron-command")
+			strCommand, err = hlp.GetEnvString("CRON_COMMAND_LIST")
 			if err != nil {
 				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+			}
+
+			if len(strCommand) == 0 {
+				strCommand, err = cmd.Flags().GetString("cron-command")
+				if err != nil {
+					hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+				}
 			}
 
 			if len(strCommand) <= 0 {
@@ -86,10 +107,18 @@ var Daemon = &cobra.Command{
 			hlp.LogPrintln(hlp.LogLevelFatal, fmt.Sprintf("cron-schedule and cron-command has mismatch range (%v:%v)", len(arrSchedule), len(arrCommand)))
 		}
 
-		strShowResultIDs, err = cmd.Flags().GetString("cron-show-ids")
+		strShowResultIDs, err = hlp.GetEnvString("CRON_SHOW_RESULT_IDS_LIST")
 		if err != nil {
 			hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
 		}
+
+		if len(strShowResultIDs) == 0 {
+			strShowResultIDs, err = cmd.Flags().GetString("cron-show-ids")
+			if err != nil {
+				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+			}
+		}
+
 		arrShowResultIDs = strings.Split(strShowResultIDs, ";")
 
 		cronRoutines := cron.New()
@@ -146,8 +175,8 @@ var Daemon = &cobra.Command{
 }
 
 func init() {
-	Daemon.Flags().String("cron-command", "", "Cron command list to be executed when cron schedule is match with current time (use (;) separator between command)")
-	Daemon.Flags().String("cron-schedule", "", "Cron schedule list to run cron command in cron time format (use (;) separator between schedule)")
-	Daemon.Flags().String("cron-show-ids", "", "Cron IDs list to show cron command execution result (use (;) separator between ids)")
-	Daemon.Flags().String("file", "/etc/go-cron/crontab", "Cron crontab file location")
+	Daemon.Flags().String("cron-command", "", "Cron command list to be executed when cron schedule is match with current time (use (;) separator between command). Can be override using CRON_COMMAND_LIST environment variable")
+	Daemon.Flags().String("cron-schedule", "", "Cron schedule list to run cron command in cron time format (use (;) separator between schedule). Can be override using CRON_SCHEDULE_LIST environment variable")
+	Daemon.Flags().String("cron-show-ids", "", "Cron IDs list to show cron command execution result (use (;) separator between ids). Can be override using CRON_SHOW_RESULT_IDS_LIST environment variable")
+	Daemon.Flags().String("file", "/etc/go-cron/crontab", "Cron crontab file location. Can be override using CRON_CRONTAB_FILE environment variable")
 }
