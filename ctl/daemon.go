@@ -33,10 +33,6 @@ var Daemon = &cobra.Command{
 
 		cronTabFile, err := hlp.GetEnvString("CRON_CRONTAB_FILE")
 		if err != nil {
-			hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
-		}
-
-		if len(cronTabFile) == 0 {
 			cronTabFile, err = cmd.Flags().GetString("file")
 			if err != nil {
 				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
@@ -50,10 +46,6 @@ var Daemon = &cobra.Command{
 
 			strSchedule, err = hlp.GetEnvString("CRON_SCHEDULE_LIST")
 			if err != nil {
-				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
-			}
-
-			if len(strSchedule) == 0 {
 				strSchedule, err = cmd.Flags().GetString("cron-schedule")
 				if err != nil {
 					hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
@@ -66,10 +58,6 @@ var Daemon = &cobra.Command{
 
 			strCommand, err = hlp.GetEnvString("CRON_COMMAND_LIST")
 			if err != nil {
-				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
-			}
-
-			if len(strCommand) == 0 {
 				strCommand, err = cmd.Flags().GetString("cron-command")
 				if err != nil {
 					hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
@@ -109,10 +97,6 @@ var Daemon = &cobra.Command{
 
 		strShowResultIDs, err = hlp.GetEnvString("CRON_SHOW_RESULT_IDS_LIST")
 		if err != nil {
-			hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
-		}
-
-		if len(strShowResultIDs) == 0 {
 			strShowResultIDs, err = cmd.Flags().GetString("cron-show-ids")
 			if err != nil {
 				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
@@ -121,12 +105,15 @@ var Daemon = &cobra.Command{
 
 		arrShowResultIDs = strings.Split(strShowResultIDs, ";")
 
-		cronRoutines := cron.New()
+		cronRoutines := cron.New(cron.WithChain(
+			cron.Recover(cron.DefaultLogger),
+		))
+
 		for i := 0; i < len(arrSchedule); i++ {
 			hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("initialize go-cron routine [id: %v, routine: [%v] => [%v]]", i, arrSchedule[i], arrCommand[i]))
 
 			go func(i int) {
-				cronRoutines.AddFunc("0 "+arrSchedule[i], func() {
+				cronRoutines.AddFunc(arrSchedule[i], func() {
 					hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, executing cron routine", i))
 
 					cronCommand := hlp.SplitWithEscapeN(arrCommand[i], " ", -1, true)
