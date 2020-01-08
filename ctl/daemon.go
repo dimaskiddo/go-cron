@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/robfig/cron"
+	cron "github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 
 	"github.com/dimaskiddo/go-cron/hlp"
@@ -105,12 +105,15 @@ var Daemon = &cobra.Command{
 
 		arrShowResultIDs = strings.Split(strShowResultIDs, ";")
 
-		cronRoutines := cron.New()
+		cronRoutines := cron.New(cron.WithChain(
+			cron.Recover(cron.DefaultLogger),
+		))
+
 		for i := 0; i < len(arrSchedule); i++ {
 			hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("initialize go-cron routine [id: %v, routine: [%v] => [%v]]", i, arrSchedule[i], arrCommand[i]))
 
 			go func(i int) {
-				cronRoutines.AddFunc("0 "+arrSchedule[i], func() {
+				cronRoutines.AddFunc(arrSchedule[i], func() {
 					hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, executing cron routine", i))
 
 					cronCommand := hlp.SplitWithEscapeN(arrCommand[i], " ", -1, true)
