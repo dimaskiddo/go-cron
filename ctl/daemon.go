@@ -105,15 +105,12 @@ var Daemon = &cobra.Command{
 
 		arrShowResultIDs = strings.Split(strShowResultIDs, ";")
 
-		cronRoutines := cron.New(cron.WithChain(
-			cron.Recover(cron.DefaultLogger),
-		))
-
+		cronRoutines := cron.New()
 		for i := 0; i < len(arrSchedule); i++ {
 			hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("initialize go-cron routine [id: %v, routine: [%v] => [%v]]", i, arrSchedule[i], arrCommand[i]))
 
 			go func(i int) {
-				cronRoutines.AddFunc(arrSchedule[i], func() {
+				cronRoutines.AddFunc("0 "+arrSchedule[i], func() {
 					hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, executing cron routine", i))
 
 					cronCommand := hlp.SplitWithEscapeN(arrCommand[i], " ", -1, true)
