@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/dimaskiddo/go-cron/ctl"
+	"github.com/dimaskiddo/go-cron/internal/cmd"
 )
 
 // Root Variable Structure
@@ -22,8 +22,8 @@ var r = &cobra.Command{
 // Init Function
 func init() {
 	// Add Child for Root Command
-	r.AddCommand(ctl.Version)
-	r.AddCommand(ctl.Daemon)
+	r.AddCommand(cmd.Version)
+	r.AddCommand(cmd.Daemon)
 }
 
 // Main Function

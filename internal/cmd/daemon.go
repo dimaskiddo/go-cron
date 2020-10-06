@@ -1,4 +1,4 @@
-package ctl
+package cmd
 
 import (
 	"bytes"
@@ -13,7 +13,9 @@ import (
 	cron "github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 
-	"github.com/dimaskiddo/go-cron/hlp"
+	"github.com/dimaskiddo/go-cron/pkg/env"
+	"github.com/dimaskiddo/go-cron/pkg/log"
+	"github.com/dimaskiddo/go-cron/pkg/str"
 )
 
 // Daemon Variable Structure
@@ -27,45 +29,45 @@ var Daemon = &cobra.Command{
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 
-		hlp.LogPrintln(hlp.LogLevelInfo, "initialize go-cron")
+		log.Println(log.LogLevelInfo, "initialize go-cron")
 		var strSchedule, strCommand, strShowResultIDs string
 		var arrSchedule, arrCommand, arrShowResultIDs []string
 
-		cronTabFile, err := hlp.GetEnvString("CRON_CRONTAB_FILE")
+		cronTabFile, err := env.GetEnvString("CRON_CRONTAB_FILE")
 		if err != nil {
 			cronTabFile, err = cmd.Flags().GetString("file")
 			if err != nil {
-				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+				log.Println(log.LogLevelFatal, err.Error())
 			}
 		}
 
-		hlp.LogPrintln(hlp.LogLevelInfo, "parse go-cron configuration")
+		log.Println(log.LogLevelInfo, "parse go-cron configuration")
 		_, err = os.Stat(cronTabFile)
 		if err != nil {
-			hlp.LogPrintln(hlp.LogLevelWarn, "crontab file not found, load configuration from parameters")
+			log.Println(log.LogLevelWarn, "crontab file not found, load configuration from parameters")
 
-			strSchedule, err = hlp.GetEnvString("CRON_SCHEDULE_LIST")
+			strSchedule, err = env.GetEnvString("CRON_SCHEDULE_LIST")
 			if err != nil {
 				strSchedule, err = cmd.Flags().GetString("cron-schedule")
 				if err != nil {
-					hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+					log.Println(log.LogLevelFatal, err.Error())
 				}
 			}
 
 			if len(strSchedule) <= 0 {
-				hlp.LogPrintln(hlp.LogLevelFatal, "cron-schedule parameter is empty")
+				log.Println(log.LogLevelFatal, "cron-schedule parameter is empty")
 			}
 
-			strCommand, err = hlp.GetEnvString("CRON_COMMAND_LIST")
+			strCommand, err = env.GetEnvString("CRON_COMMAND_LIST")
 			if err != nil {
 				strCommand, err = cmd.Flags().GetString("cron-command")
 				if err != nil {
-					hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+					log.Println(log.LogLevelFatal, err.Error())
 				}
 			}
 
 			if len(strCommand) <= 0 {
-				hlp.LogPrintln(hlp.LogLevelFatal, "cron-command parameter is empty")
+				log.Println(log.LogLevelFatal, "cron-command parameter is empty")
 			}
 
 			arrSchedule = strings.Split(strSchedule, ";")
@@ -73,11 +75,11 @@ var Daemon = &cobra.Command{
 		} else {
 			cronTabContents, err := ioutil.ReadFile(cronTabFile)
 			if err != nil {
-				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+				log.Println(log.LogLevelFatal, err.Error())
 			}
 
 			if len(string(cronTabContents)) <= 0 {
-				hlp.LogPrintln(hlp.LogLevelFatal, "crontab file has empty contents")
+				log.Println(log.LogLevelFatal, "crontab file has empty contents")
 			}
 
 			cronTabLines := strings.Split(string(cronTabContents), fmt.Sprintf("\n"))
@@ -92,14 +94,14 @@ var Daemon = &cobra.Command{
 		}
 
 		if len(arrSchedule) != len(arrCommand) {
-			hlp.LogPrintln(hlp.LogLevelFatal, fmt.Sprintf("cron-schedule and cron-command has mismatch range (%v:%v)", len(arrSchedule), len(arrCommand)))
+			log.Println(log.LogLevelFatal, fmt.Sprintf("cron-schedule and cron-command has mismatch range (%v:%v)", len(arrSchedule), len(arrCommand)))
 		}
 
-		strShowResultIDs, err = hlp.GetEnvString("CRON_SHOW_RESULT_IDS_LIST")
+		strShowResultIDs, err = env.GetEnvString("CRON_SHOW_RESULT_IDS_LIST")
 		if err != nil {
 			strShowResultIDs, err = cmd.Flags().GetString("cron-show-ids")
 			if err != nil {
-				hlp.LogPrintln(hlp.LogLevelFatal, err.Error())
+				log.Println(log.LogLevelFatal, err.Error())
 			}
 		}
 
@@ -110,13 +112,13 @@ var Daemon = &cobra.Command{
 		))
 
 		for i := 0; i < len(arrSchedule); i++ {
-			hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("initialize go-cron routine [id: %v, routine: [%v] => [%v]]", i, arrSchedule[i], arrCommand[i]))
+			log.Println(log.LogLevelInfo, fmt.Sprintf("initialize go-cron routine [id: %v, routine: [%v] => [%v]]", i, arrSchedule[i], arrCommand[i]))
 
 			go func(i int) {
 				cronRoutines.AddFunc(arrSchedule[i], func() {
-					hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, executing cron routine", i))
+					log.Println(log.LogLevelInfo, fmt.Sprintf("id: %v, executing cron routine", i))
 
-					cronCommand := hlp.SplitWithEscapeN(arrCommand[i], " ", -1, true)
+					cronCommand := str.SplitWithEscapeN(arrCommand[i], " ", -1, true)
 					cronExecute := exec.Command(cronCommand[0], cronCommand[1:]...)
 
 					var cronStdout, cronStderr bytes.Buffer
@@ -126,36 +128,36 @@ var Daemon = &cobra.Command{
 
 					err := cronExecute.Run()
 					if err != nil {
-						if hlp.IsStringsContains(fmt.Sprintf("%v", i), arrShowResultIDs) {
-							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, cron routine execution result:", i))
-							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, -----------------------------------------", i))
-							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, execution result:\n%v", i, string(cronStderr.String())))
-							hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, -----------------------------------------", i))
+						if str.IsStringsContains(fmt.Sprintf("%v", i), arrShowResultIDs) {
+							log.Println(log.LogLevelError, fmt.Sprintf("id: %v, cron routine execution result:", i))
+							log.Println(log.LogLevelError, fmt.Sprintf("id: %v, -----------------------------------------", i))
+							log.Println(log.LogLevelError, fmt.Sprintf("id: %v, execution result:\n%v", i, string(cronStderr.String())))
+							log.Println(log.LogLevelError, fmt.Sprintf("id: %v, -----------------------------------------", i))
 						}
-						hlp.LogPrintln(hlp.LogLevelError, fmt.Sprintf("id: %v, cron routine executed with an error", i))
+						log.Println(log.LogLevelError, fmt.Sprintf("id: %v, cron routine executed with an error", i))
 						return
 					}
 
-					if hlp.IsStringsContains(fmt.Sprintf("%v", i), arrShowResultIDs) {
-						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, cron routine execution result:", i))
-						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, -----------------------------------------", i))
-						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, execution result:\n%v", i, string(cronStdout.String())))
-						hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, -----------------------------------------", i))
+					if str.IsStringsContains(fmt.Sprintf("%v", i), arrShowResultIDs) {
+						log.Println(log.LogLevelInfo, fmt.Sprintf("id: %v, cron routine execution result:", i))
+						log.Println(log.LogLevelInfo, fmt.Sprintf("id: %v, -----------------------------------------", i))
+						log.Println(log.LogLevelInfo, fmt.Sprintf("id: %v, execution result:\n%v", i, string(cronStdout.String())))
+						log.Println(log.LogLevelInfo, fmt.Sprintf("id: %v, -----------------------------------------", i))
 					}
-					hlp.LogPrintln(hlp.LogLevelInfo, fmt.Sprintf("id: %v, cron routine executed successfully", i))
+					log.Println(log.LogLevelInfo, fmt.Sprintf("id: %v, cron routine executed successfully", i))
 				})
 			}(i)
 		}
 
-		hlp.LogPrintln(hlp.LogLevelInfo, "starting go-cron routine")
+		log.Println(log.LogLevelInfo, "starting go-cron routine")
 		cronRoutines.Start()
 
 		select {
 		case <-sig:
 			fmt.Println("")
-			hlp.LogPrintln(hlp.LogLevelInfo, "stopping go-cron routine")
+			log.Println(log.LogLevelInfo, "stopping go-cron routine")
 
-			hlp.LogPrintln(hlp.LogLevelInfo, "stopping go-cron")
+			log.Println(log.LogLevelInfo, "stopping go-cron")
 			os.Exit(0)
 		}
 	},

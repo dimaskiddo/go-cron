@@ -2,7 +2,7 @@ before:
   hooks:
     - make vendor
 builds:
-- binary: go-cron
+- main: ./cmd/main/main.go
   env:
     - CGO_ENABLED=0
   ldflags:
